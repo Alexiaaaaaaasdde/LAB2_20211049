@@ -1,20 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
-
-    <!-- Estado presionado -->
-    <item android:state_pressed="true">
-        <shape android:shape="rectangle">
-            <solid android:color="#D32F2F" />
-            <corners android:radius="24dp" />
+    <item android:state_enabled="true" android:state_pressed="true">
+        <shape>
+            <gradient
+                android:startColor="#D32F2F"
+                android:endColor="#F44336"
+                android:angle="90" />
+            <corners android:radius="25dp" />
         </shape>
     </item>
-
-    <!-- Estado normal -->
-    <item>
-        <shape android:shape="rectangle">
-            <solid android:color="@color/telecat_button_red" />
-            <corners android:radius="24dp" />
+    <item android:state_enabled="true">
+        <shape>
+            <gradient
+                android:startColor="#F44336"
+                android:endColor="#FF5722"
+                android:angle="90" />
+            <corners android:radius="25dp" />
         </shape>
     </item>
-
+    <item android:state_enabled="false">
+        <shape>
+            <solid android:color="#BDBDBD" />
+            <corners android:radius="25dp" />
+        </shape>
+    </item>
 </selector>
