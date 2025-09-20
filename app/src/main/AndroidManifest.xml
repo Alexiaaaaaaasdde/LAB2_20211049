@@ -29,6 +29,10 @@
             android:name=".TeleCatActivity"
             android:exported="false" />
 
+        <activity android:name=".FinishActivity"
+            android:exported="false"/>
+
+
     </application>
 
 </manifest>

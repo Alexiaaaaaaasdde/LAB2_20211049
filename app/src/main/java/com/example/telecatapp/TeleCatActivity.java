@@ -5,10 +5,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.os.CountDownTimer;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -23,8 +20,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-// Uso de LLM: Claude ayudó con la mejora del diseño UI, manejo de hilos,
-// carga de imágenes asíncrona y validaciones del contador
 public class TeleCatActivity extends AppCompatActivity {
 
     private TextView tvCountdown, tvCantidad, tvSubtitulo, tvTitulo;
@@ -39,7 +34,7 @@ public class TeleCatActivity extends AppCompatActivity {
     private String opcionTexto;
     private String texto;
 
-    // Lista para guardar historial (para el Ejercicio 3)
+    // Lista para guardar historial
     private List<String> historial = new ArrayList<>();
 
     @Override
@@ -65,7 +60,6 @@ public class TeleCatActivity extends AppCompatActivity {
     }
 
     private void initData() {
-        // Recuperar extras desde MainActivity
         cantidad = getIntent().getIntExtra("CANTIDAD", 1);
         opcionTexto = getIntent().getStringExtra("OPCION_TEXTO");
         texto = getIntent().getStringExtra("TEXTO");
@@ -76,7 +70,6 @@ public class TeleCatActivity extends AppCompatActivity {
     private void setupUI() {
         tvCantidad.setText("Cantidad = " + cantidad);
 
-        // Deshabilitar botón inicialmente
         btnNext.setEnabled(false);
         btnNext.setAlpha(0.5f);
 
@@ -84,23 +77,20 @@ public class TeleCatActivity extends AppCompatActivity {
             if (timer != null) {
                 timer.cancel();
             }
-            // TODO: Navegar a FinishActivity con historial
-            // Intent intent = new Intent(TeleCatActivity.this, FinishActivity.class);
-            // intent.putStringArrayListExtra("HISTORIAL", new ArrayList<>(historial));
-            // startActivity(intent);
-            Toast.makeText(this, "Navegando a pantalla final...", Toast.LENGTH_SHORT).show();
+            // Navegar a FinishActivity y enviar historial
+            Intent intent = new Intent(TeleCatActivity.this, FinishActivity.class);
+            intent.putStringArrayListExtra("HISTORIAL", new ArrayList<>(historial));
+            startActivity(intent);
             finish();
         });
     }
 
     private void startImageDisplay() {
-        long totalTime = cantidad * 4000L; // 4 segundos por imagen
+        long totalTime = cantidad * 4000L;
 
-        // Mostrar primera imagen inmediatamente
         cargarNuevaImagen();
 
-        // Iniciar el contador
-        timer = new CountDownTimer(totalTime, 100) { // Update cada 100ms para mejor precisión
+        timer = new CountDownTimer(totalTime, 100) {
             @Override
             public void onTick(long millisUntilFinished) {
                 int segundos = (int) (millisUntilFinished / 1000);
@@ -109,7 +99,6 @@ public class TeleCatActivity extends AppCompatActivity {
 
                 tvCountdown.setText(String.format("%02d:%02d", minutos, segs));
 
-                // Mostrar nueva imagen cada 4 segundos
                 long tiempoTranscurrido = totalTime - millisUntilFinished;
                 int imagenDebeMostrar = (int) (tiempoTranscurrido / 4000) + 1;
 
@@ -122,8 +111,6 @@ public class TeleCatActivity extends AppCompatActivity {
             public void onFinish() {
                 tvCountdown.setText("00:00");
                 habilitarBotonSiguiente();
-
-                // Agregar al historial que terminó el tiempo
                 historial.add("⏰ Tiempo completado - Total: " + cantidad + " imágenes mostradas");
             }
         };
@@ -138,16 +125,13 @@ public class TeleCatActivity extends AppCompatActivity {
 
         indiceActual++;
 
-        // Construir URL de la API de cataas.com
         String urlStr;
         try {
             if ("Sí".equals(opcionTexto) && texto != null && !texto.trim().isEmpty()) {
-                // URL con texto personalizado
                 String textoEncoded = URLEncoder.encode(texto.trim(), "UTF-8");
                 urlStr = "https://cataas.com/cat/says/" + textoEncoded +
                         "?fontSize=30&fontColor=white&ts=" + System.currentTimeMillis();
             } else {
-                // URL sin texto
                 urlStr = "https://cataas.com/cat?ts=" + System.currentTimeMillis();
             }
         } catch (Exception e) {
@@ -155,11 +139,9 @@ public class TeleCatActivity extends AppCompatActivity {
             urlStr = "https://cataas.com/cat?ts=" + System.currentTimeMillis();
         }
 
-        // Agregar al historial
         String tipoImagen = "Sí".equals(opcionTexto) ? "con texto: '" + texto + "'" : "sin texto";
         historial.add("🐱 Imagen " + indiceActual + "/" + cantidad + " (" + tipoImagen + ")");
 
-        // Cargar imagen en hilo separado
         cargarImagenAsync(urlStr);
     }
 
@@ -168,8 +150,8 @@ public class TeleCatActivity extends AppCompatActivity {
             try {
                 URL url = new URL(urlStr);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(5000); // 5 segundos timeout
-                conn.setReadTimeout(10000); // 10 segundos timeout
+                conn.setConnectTimeout(5000);
+                conn.setReadTimeout(10000);
                 conn.setRequestProperty("User-Agent", "TeleCatApp/1.0");
 
                 conn.connect();
@@ -180,28 +162,20 @@ public class TeleCatActivity extends AppCompatActivity {
                     is.close();
 
                     if (bitmap != null) {
-                        // Actualizar UI en hilo principal
                         runOnUiThread(() -> {
                             imgCat.setImageBitmap(bitmap);
-                            // Pequeña animación de entrada
                             imgCat.setAlpha(0f);
                             imgCat.animate().alpha(1f).setDuration(300).start();
                         });
-                    } else {
-                        throw new Exception("No se pudo decodificar la imagen");
                     }
-                } else {
-                    throw new Exception("HTTP Error: " + conn.getResponseCode());
                 }
-
                 conn.disconnect();
-
             } catch (Exception e) {
                 Log.e("TeleCat", "Error cargando imagen: " + urlStr, e);
-                runOnUiThread(() -> {
-                    Toast.makeText(TeleCatActivity.this,
-                            "Error cargando imagen " + indiceActual, Toast.LENGTH_SHORT).show();
-                });
+                runOnUiThread(() ->
+                        Toast.makeText(TeleCatActivity.this,
+                                "Error cargando imagen " + indiceActual, Toast.LENGTH_SHORT).show()
+                );
             }
         });
     }
@@ -211,7 +185,6 @@ public class TeleCatActivity extends AppCompatActivity {
         btnNext.setAlpha(1.0f);
         btnNext.setText("✅ Siguiente");
 
-        // Pequeña animación para llamar la atención
         btnNext.animate()
                 .scaleX(1.1f).scaleY(1.1f)
                 .setDuration(200)
@@ -223,36 +196,12 @@ public class TeleCatActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-
-        // Limpiar recursos
         if (timer != null) {
             timer.cancel();
         }
-
         if (executor != null) {
             executor.shutdown();
         }
     }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        // El contador debe continuar según las especificaciones
-        // No pausamos el timer
-        Log.d("TeleCat", "Activity pausada, timer continúa");
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        Log.d("TeleCat", "Activity resumida");
-    }
-
-    // Método para manejar cambios de configuración (rotación)
-    @Override
-    public void onConfigurationChanged(android.content.res.Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
-        Log.d("TeleCat", "Configuración cambiada, timer continúa");
-        // El timer debe continuar según las especificaciones
-    }
 }
+
