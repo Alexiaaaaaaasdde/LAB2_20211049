@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Estado habilitado -->
+    <item android:state_enabled="true">
+        <shape>
+            <gradient
+                android:startColor="#FF5722"
+                android:endColor="#D32F2F"
+                android:angle="135"/>
+            <corners android:radius="25dp"/>
+        </shape>
+    </item>
+
+    <!-- Estado deshabilitado -->
+    <item android:state_enabled="false">
+        <shape>
+            <solid android:color="#BDBDBD"/>
+            <corners android:radius="25dp"/>
+        </shape>
+    </item>
+</selector>
