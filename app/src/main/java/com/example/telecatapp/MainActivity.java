@@ -9,6 +9,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -16,6 +17,9 @@ public class MainActivity extends AppCompatActivity {
     private Button btnCheck, btnStart;
     private Spinner spTexto;
     private boolean internetOk = false;
+
+    // Variable para mantener el historial entre partidas
+    private ArrayList<String> historialGlobal;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,6 +29,12 @@ public class MainActivity extends AppCompatActivity {
         initViews();
         setupSpinner();
         setupClickListeners();
+
+        // Recuperar historial si viene de una partida anterior
+        historialGlobal = getIntent().getStringArrayListExtra("HISTORIAL");
+        if (historialGlobal == null) {
+            historialGlobal = new ArrayList<>();
+        }
     }
 
     private void initViews() {
@@ -110,6 +120,8 @@ public class MainActivity extends AppCompatActivity {
                 intent.putExtra("CANTIDAD", cantidad);
                 intent.putExtra("OPCION_TEXTO", opcionTexto);
                 intent.putExtra("TEXTO", texto);
+                // AGREGADO: Pasar el historial actual
+                intent.putStringArrayListExtra("HISTORIAL", historialGlobal);
                 startActivity(intent);
             }
         });

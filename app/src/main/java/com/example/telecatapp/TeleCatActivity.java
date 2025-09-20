@@ -16,7 +16,6 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -33,9 +32,6 @@ public class TeleCatActivity extends AppCompatActivity {
 
     private String opcionTexto;
     private String texto;
-
-    // Lista para guardar historial
-    private List<String> historial = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,9 +73,25 @@ public class TeleCatActivity extends AppCompatActivity {
             if (timer != null) {
                 timer.cancel();
             }
-            // Navegar a FinishActivity y enviar historial
+
+            // Obtener historial existente (puede venir de partidas anteriores)
+            ArrayList<String> historial = getIntent().getStringArrayListExtra("HISTORIAL");
+            if (historial == null) {
+                historial = new ArrayList<>();
+            }
+
+            // Crear descripción de la partida actual
+            String descripcionPartida = "Interacción " + (historial.size() + 1) + ": " + cantidad + " imágenes";
+            if ("Sí".equals(opcionTexto) && texto != null && !texto.trim().isEmpty()) {
+                descripcionPartida += " con texto: '" + texto + "'";
+            }
+
+            // Agregar la partida actual al historial
+            historial.add(descripcionPartida);
+
+            // Pasar historial actualizado a la pantalla final
             Intent intent = new Intent(TeleCatActivity.this, FinishActivity.class);
-            intent.putStringArrayListExtra("HISTORIAL", new ArrayList<>(historial));
+            intent.putStringArrayListExtra("HISTORIAL", historial);
             startActivity(intent);
             finish();
         });
@@ -90,7 +102,7 @@ public class TeleCatActivity extends AppCompatActivity {
 
         cargarNuevaImagen();
 
-        timer = new CountDownTimer(totalTime, 100) {
+        timer = new CountDownTimer(totalTime, 1000) {
             @Override
             public void onTick(long millisUntilFinished) {
                 int segundos = (int) (millisUntilFinished / 1000);
@@ -111,7 +123,6 @@ public class TeleCatActivity extends AppCompatActivity {
             public void onFinish() {
                 tvCountdown.setText("00:00");
                 habilitarBotonSiguiente();
-                historial.add("⏰ Tiempo completado - Total: " + cantidad + " imágenes mostradas");
             }
         };
 
@@ -119,9 +130,7 @@ public class TeleCatActivity extends AppCompatActivity {
     }
 
     private void cargarNuevaImagen() {
-        if (indiceActual >= cantidad) {
-            return;
-        }
+        if (indiceActual >= cantidad) return;
 
         indiceActual++;
 
@@ -135,12 +144,8 @@ public class TeleCatActivity extends AppCompatActivity {
                 urlStr = "https://cataas.com/cat?ts=" + System.currentTimeMillis();
             }
         } catch (Exception e) {
-            Log.e("TeleCat", "Error encoding texto", e);
             urlStr = "https://cataas.com/cat?ts=" + System.currentTimeMillis();
         }
-
-        String tipoImagen = "Sí".equals(opcionTexto) ? "con texto: '" + texto + "'" : "sin texto";
-        historial.add("🐱 Imagen " + indiceActual + "/" + cantidad + " (" + tipoImagen + ")");
 
         cargarImagenAsync(urlStr);
     }
@@ -161,21 +166,18 @@ public class TeleCatActivity extends AppCompatActivity {
                     Bitmap bitmap = BitmapFactory.decodeStream(is);
                     is.close();
 
-                    if (bitmap != null) {
-                        runOnUiThread(() -> {
-                            imgCat.setImageBitmap(bitmap);
-                            imgCat.setAlpha(0f);
-                            imgCat.animate().alpha(1f).setDuration(300).start();
-                        });
-                    }
+                    runOnUiThread(() -> {
+                        imgCat.setImageBitmap(bitmap);
+                        imgCat.setAlpha(0f);
+                        imgCat.animate().alpha(1f).setDuration(300).start();
+                    });
                 }
+
                 conn.disconnect();
             } catch (Exception e) {
-                Log.e("TeleCat", "Error cargando imagen: " + urlStr, e);
                 runOnUiThread(() ->
                         Toast.makeText(TeleCatActivity.this,
-                                "Error cargando imagen " + indiceActual, Toast.LENGTH_SHORT).show()
-                );
+                                "Error cargando imagen " + indiceActual, Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -184,24 +186,12 @@ public class TeleCatActivity extends AppCompatActivity {
         btnNext.setEnabled(true);
         btnNext.setAlpha(1.0f);
         btnNext.setText("✅ Siguiente");
-
-        btnNext.animate()
-                .scaleX(1.1f).scaleY(1.1f)
-                .setDuration(200)
-                .withEndAction(() ->
-                        btnNext.animate().scaleX(1f).scaleY(1f).setDuration(200).start())
-                .start();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (timer != null) {
-            timer.cancel();
-        }
-        if (executor != null) {
-            executor.shutdown();
-        }
+        if (timer != null) timer.cancel();
+        if (executor != null) executor.shutdown();
     }
 }
-
